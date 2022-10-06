@@ -5,9 +5,10 @@ class HUDView: UIViewController, HUDViewInterface {
     let presenter: HUDViewPresenterInterface
     var config: HUDViewModel
     var window: UIWindow?
-    var holderView: UIView? { config.userInteractionEnabled ? window : containerView }
+    var backgroundWindow: BackgroundHUDWindow
+    var holderView: UIView? { window }
+    let statusBarStyle: UIStatusBarStyle?
 
-    let coverView: UIView?
     let containerView: HUDContainerView
 
     var keyboardNotificationHandler: HUDKeyboardHelper? {
@@ -20,11 +21,12 @@ class HUDView: UIViewController, HUDViewInterface {
     public var showCompletion: (() -> ())?
     public var dismissCompletion: (() -> ())?
 
-    init(presenter: HUDViewPresenterInterface, config: HUDViewModel, coverView: UIView?, containerView: HUDContainerView) {
+    init(presenter: HUDViewPresenterInterface, config: HUDViewModel, backgroundWindow: BackgroundHUDWindow, containerView: HUDContainerView, statusBarStyle: UIStatusBarStyle? = nil) {
         self.presenter = presenter
         self.config = config
-        self.coverView = coverView
+        self.backgroundWindow = backgroundWindow
         self.containerView = containerView
+        self.statusBarStyle = statusBarStyle
 
         super.init(nibName: nil, bundle: Bundle(for: HUDView.self))
     }
@@ -36,14 +38,7 @@ class HUDView: UIViewController, HUDViewInterface {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        if let coverView = coverView {
-            view.addSubview(coverView)
-        }
         view.addSubview(containerView)
-
-        coverView?.frame = view.bounds
-        coverView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-
         presenter.viewDidLoad()
     }
 
@@ -65,6 +60,9 @@ class HUDView: UIViewController, HUDViewInterface {
 
     func set(config: HUDConfig) {
         self.config = config
+
+        backgroundWindow.set(transparent: config.userInteractionEnabled)
+        presenter.updateCover()
     }
 
     func adjustPlace() {
@@ -85,7 +83,7 @@ class HUDView: UIViewController, HUDViewInterface {
 
     func adjustViewCenter(for view: UIView?, style: HUDBannerStyle? = nil) {
         guard let style = style else {
-            set(CGPoint(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2), for: holderView, useConstraints: !config.userInteractionEnabled)
+            set(CGPoint(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2), for: holderView, useConstraints: false)
             return
         }
 
@@ -107,7 +105,7 @@ class HUDView: UIViewController, HUDViewInterface {
                 viewCenter = CGPoint(x: UIScreen.main.bounds.width - contentCenter.x + centerOffset.x, y: screenCenter.y + centerOffset.y)
         }
 
-        set(viewCenter, for: holderView, useConstraints: !config.userInteractionEnabled)
+        set(viewCenter, for: holderView, useConstraints: false)
     }
 
     func set(_ center: CGPoint,for view: UIView?, useConstraints: Bool) {
@@ -158,6 +156,14 @@ class HUDView: UIViewController, HUDViewInterface {
 
 extension HUDView {
 
+    func hide(animated: Bool, completion: (() -> ())? = nil) {
+        presenter.dismiss(animated: animated, completion: completion)
+    }
+
+}
+
+extension HUDView {
+
     internal override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         if let rootViewController = UIApplication.shared.delegate?.window??.rootViewController {
             return rootViewController.supportedInterfaceOrientations
@@ -167,22 +173,21 @@ extension HUDView {
     }
 
     internal override var preferredStatusBarStyle: UIStatusBarStyle {
+        if let style = statusBarStyle {
+            return style
+        }
+
         if let rootViewController = UIApplication.shared.delegate?.window??.rootViewController {
             return rootViewController.preferredStatusBarStyle
         }
-        
-        let applicationStatusBarStyle = view.window?.windowScene?.statusBarManager?.statusBarStyle
-        let preferredStyle = presentingViewController?.preferredStatusBarStyle ?? applicationStatusBarStyle
-        return preferredStyle ?? .default
+        return presentingViewController?.preferredStatusBarStyle ?? UIApplication.shared.statusBarStyle
     }
 
     internal override var prefersStatusBarHidden: Bool {
         if let rootViewController = UIApplication.shared.delegate?.window??.rootViewController {
             return rootViewController.prefersStatusBarHidden
         }
-        let applicationStatusBarHidden = view.window?.windowScene?.statusBarManager?.isStatusBarHidden
-        let preferredStyle = presentingViewController?.prefersStatusBarHidden ?? applicationStatusBarHidden
-        return preferredStyle ?? false
+        return self.presentingViewController?.prefersStatusBarHidden ?? UIApplication.shared.isStatusBarHidden
     }
 
     internal override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {

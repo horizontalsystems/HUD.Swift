@@ -14,7 +14,7 @@ public class HUDStatusModel: HUDStatusViewConfig {
     public var errorImage: UIImage?
     public var cancelImage: UIImage?
 
-    public var activityIndicatorStyle: UIActivityIndicatorView.Style = .large
+    public var activityIndicatorStyle: UIActivityIndicatorView.Style = .whiteLarge
     public var activityIndicatorColor: UIColor = .gray
 
     public var customProgressValue: Float? = 0

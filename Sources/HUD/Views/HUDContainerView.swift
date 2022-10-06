@@ -171,7 +171,7 @@ open class HUDContainerView: CustomIntensityVisualEffectView, HUDContainerInterf
             completion?()
             return
         }
-        let animateBlock: (() -> ())
+        let animateBlock: () -> ()
         switch appearStyle {
             case .alphaAppear:
                 animateBlock = {
