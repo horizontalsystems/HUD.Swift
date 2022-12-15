@@ -18,6 +18,7 @@ public class HUDProgressView: UIView, HUDAnimatedViewInterface, HUDTappableViewI
     private var duration: TimeInterval
 
     public var centerPoint: CGFloat { return radius + strokeLineWidth / 2 }
+    public var clockwise = true
     public var isAnimating = false
 
     private var valueChanger: SmoothValueChanger?
@@ -89,7 +90,7 @@ public class HUDProgressView: UIView, HUDAnimatedViewInterface, HUDTappableViewI
 
     func smootherPath(startAngle: CGFloat, endAngle: CGFloat) -> UIBezierPath {
         let arcCenter = CGPoint(x: centerPoint, y: centerPoint)
-        return UIBezierPath(arcCenter: arcCenter, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
+        return UIBezierPath(arcCenter: arcCenter, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: clockwise)
     }
 
     override open func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -172,7 +173,13 @@ public class HUDProgressView: UIView, HUDAnimatedViewInterface, HUDTappableViewI
             // can't change progress from indefinite to custom value
             return
         }
-        _indefiniteAnimatedLayer?.path = smootherPath(startAngle: CGFloat.pi * 1.5, endAngle: CGFloat.pi * CGFloat(1.5 + 2 * progress)).cgPath
+        let endAngle: CGFloat
+        if clockwise {
+            endAngle = CGFloat.pi * CGFloat(1.5 + 2 * progress)
+        } else {
+            endAngle = CGFloat.pi * CGFloat(1.5 - 2 * progress)
+        }
+        _indefiniteAnimatedLayer?.path = smootherPath(startAngle: CGFloat.pi * 1.5, endAngle: endAngle).cgPath
         self.progress = progress
     }
 
